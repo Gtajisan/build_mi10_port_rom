@@ -3,15 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       STOCK_URL:
-        description: "待操作的底包/xiaomi.eu底包下载地址 | BASEROM DIRECT DOWNLOAD LINK(XIAOMI.EU or CN OFFICIAL ROM)"
+        description: "BASEROM DIRECT DOWNLOAD LINK (XIAOMI.EU or CN OFFICIAL ROM)"
         required: true
         default: https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS1.0.5.0.TJBCNXM/miui_UMI_OS1.0.5.0.TJBCNXM_d01651ed86_13.0.zip
       PORT_URL:
-        description: "待操作的移植包下载地址 | PORTROM DIRECT DOWNLOAD LINK(XIAOMI.EU OR CN OFFICIAL ROM)"
+        description: "PORTROM DIRECT DOWNLOAD LINK (XIAOMI.EU OR CN OFFICIAL ROM)"
         required: true
         default: https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/OS1.0.23.0.UNACNXM/miui_AURORA_OS1.0.23.0.UNACNXM_9bb4b476f4_14.0.zip
       PACK_TYPE:
-        description: "打包类型（EXT/EROFS) | PACKING TYPE(EXT/EROFS), EROFS BY DEFAULT"
+        description: "PACKING TYPE (EXT/EROFS), EROFS BY DEFAULT"
         default: EXT
         type: choice
         options:
@@ -19,15 +19,15 @@ on:
         - EXT
         required: true
       ENCRYPTION:
-        description: "是否解密data分区(TRUE/FALSE)，默认加密 | FBE DECRYPTION OR NOT, FBE ENABLED BY DEFAULT"
+        description: "FBE DECRYPTION OR NOT, FBE ENABLED BY DEFAULT"
         default: FALSE
         required: false
       ONEDRIVE:
-        description: "是否上传到OneDrive| PUSH ROM TO ONEDRIVE"
+        description: "PUSH ROM TO ONEDRIVE"
         default: FALSE
         required: false
       GITHUBRELEASE:
-        description: "是否上传到Github Release | UPLOAD ROM TO GITHUB RELEASE"
+        description: "UPLOAD ROM TO GITHUB RELEASE"
         default: FALSE
         required: false
 
@@ -35,20 +35,20 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - name: 1. 最大化并挂载构建空间 | MAXIMIZE BUILD SPACE
+      - name: 1. MAXIMIZE BUILD SPACE
         uses: rokibhasansagar/slimhub_actions@main
         
-      - name: 2. 检出仓库文件 | CHECKOUT REPOSITORY
+      - name: 2. CHECKOUT REPOSITORY
         uses: actions/checkout@main
         with:
           ref: main
           fetch-depth: 1
-      - name: 3. 设置Swap空间 | Setup Swap Size
+      - name: 3. Setup Swap Size
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 12
           
-      - name: 4. 准备环境 | PREPARE ENVIRONMENT
+      - name: 4. PREPARE ENVIRONMENT
         run: |
           sudo apt install python3 aria2 zip p7zip-full zipalign android-sdk-libsparse-utils xmlstarlet
           sudo apt-get remove -y firefox zstd
@@ -56,7 +56,7 @@ jobs:
           mkdir -p ~/.config/rclone/
           echo "${{ secrets.RCLONE_TOKEN }}" > token.txt
           base64 -d token.txt > ~/.config/rclone/rclone.conf
-      - name: 5. 开始移植 | START PORTING
+      - name: 5. START PORTING
         run: |
           git clone https://github.com/toraidl/hyperos_port.git -b test
           cd hyperos_port
@@ -76,7 +76,7 @@ jobs:
           sed -i "s/pack_method=.*/pack_method=aosp/" port.sh
           sudo bash setup.sh
           sudo bash port.sh ${{ github.event.inputs.STOCK_URL }} ${{ github.event.inputs.PORT_URL }} 
-      - name: 5. 准备上传 | PREPARE UPLOADING
+      - name: 5. PREPARE UPLOADING
         run: |
           ROM_FILE=$(basename $(find "$GITHUB_WORKSPACE"/hyperos_port/out -name "*.zip" ! -name "target-files.zip"))
           echo "ROM_FILE=$ROM_FILE" >>$GITHUB_ENV
@@ -87,15 +87,15 @@ jobs:
           sudo split -b 1536M -d "$GITHUB_WORKSPACE"/hyperos_port/out/$ROM_FILE $ROM_FILE
           ls -al "$GITHUB_WORKSPACE"/hyperos_port/GithubRelease/
      
-      - name: 9. 上传到OneDrive | PUSH ROM TO ONEDRIVE
+      - name: 9. PUSH ROM TO ONEDRIVE
         if:  ${{  github.event.inputs.ONEDRIVE == 'TRUE' }}
         run: |
             rclone sync -P "$GITHUB_WORKSPACE"/hyperos_port/out/${{ env.ROM_FILE }} onedrive:/ROM/github-actions/$OS_VERSION
             SHARE_LINK=$(rclone link onedrive:/ROM/github-actions/ --onedrive-link-scope anonymous)
             touch file.log
-            echo -e "Onedrive下载链接 | Onedrive alternate download link: \n $SHARE_LINK" > file.log
+            echo -e "Onedrive alternate download link: \n $SHARE_LINK" > file.log
      
-      - name: 10. 上传到Github Release| UPLOAD ROM TO GITHUB RELEASAE
+      - name: 10. UPLOAD ROM TO GITHUB RELEASE
         if: ${{  github.event.inputs.GITHUBRELEASE == 'TRUE' }}
         uses: ncipollo/release-action@main
         with:
